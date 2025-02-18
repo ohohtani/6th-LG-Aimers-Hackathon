@@ -9,8 +9,8 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 
 # 🔹 1. 데이터 로드
-file_path_train = "train3.csv"
-file_path_test = "test3.csv"
+file_path_train = "train3_updated.csv"
+file_path_test = "test3_updated.csv"
 sample_submission_path = "sample_submission.csv"
 
 df_train = pd.read_csv(file_path_train)
@@ -59,11 +59,10 @@ def objective(trial):
         "reg_lambda": trial.suggest_loguniform("xgb_reg_lambda", 1.0, 50.0),
         "reg_alpha": trial.suggest_loguniform("xgb_reg_alpha", 0.01, 10.0),
         "eval_metric": "auc",
-        "use_label_encoder": False,
         "random_state": 10,
-        "early_stopping_rounds": 100,  # ✅ 객체 생성 시 추가
-        "tree_method": "gpu_hist",  # ✅ GPU 가속 활성화
-        "gpu_id": 1  # ✅ GPU 1 사용 (0번이 아닌 경우)
+        "early_stopping_rounds": 100,  # ✅ 조기 종료 추가
+        "tree_method": "hist",  # ✅ GPU 사용을 위해 'hist' 설정
+        "device": "cuda"  # ✅ XGBoost 2.0에서 GPU 사용
     }
 
     params_cat = {
@@ -75,8 +74,7 @@ def objective(trial):
         "grow_policy": trial.suggest_categorical("cat_grow_policy", ["SymmetricTree", "Lossguide", "Depthwise"]),
         "class_weights": [class_weights[0], class_weights[1]],
         "random_seed": 10,
-        "task_type": "GPU",
-        "devices": "1",  # ✅ CatBoost에서 GPU 1 사용
+        "task_type": "GPU",  # ✅ CatBoost에서 GPU 사용
         "eval_metric": "AUC",
         "loss_function": "Logloss",
         "verbose": 0
@@ -109,7 +107,7 @@ def objective(trial):
 
 # 🔹 8. Optuna 실행
 study = optuna.create_study(direction="maximize")
-study.optimize(objective, n_trials=30)
+study.optimize(objective, n_trials=50)
 
 # 🔹 9. 최적 파라미터 저장
 best_params = study.best_params
@@ -119,8 +117,8 @@ print(f"🎯 최적의 하이퍼파라미터: {best_params}")
 best_params_xgb = {k.replace("xgb_", ""): v for k, v in best_params.items() if k.startswith("xgb_")}
 best_params_cat = {k.replace("cat_", ""): v for k, v in best_params.items() if k.startswith("cat_")}
 
-model_xgb = XGBClassifier(**best_params_xgb, tree_method="gpu_hist", gpu_id=1)
-model_cat = CatBoostClassifier(**best_params_cat, cat_features=cat_features, task_type="GPU", devices="1")
+model_xgb = XGBClassifier(**best_params_xgb, tree_method="hist", device="cuda")
+model_cat = CatBoostClassifier(**best_params_cat, cat_features=cat_features, task_type="GPU")
 
 # 🔹 11. 모델 학습
 model_xgb.fit(X_xgb, y)
