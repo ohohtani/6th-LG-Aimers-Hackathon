@@ -187,7 +187,7 @@ with open(xgboost_model_path, "rb") as f:
     final_xgb_model = pickle.load(f)
 
 # ✅ 교차 검증 기반 캘리브레이션 적용
-kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+kf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
 cat_calibrated_preds = np.zeros(len(X_test_numeric))
 xgb_calibrated_preds = np.zeros(len(X_test_numeric))
 
