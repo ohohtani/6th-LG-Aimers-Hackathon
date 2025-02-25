@@ -135,7 +135,7 @@ for train_idx, valid_idx in kf.split(X, y):
     model.fit(X_train, y_train, cat_features=cat_features, verbose=0)
 
     # 캘리브레이터 적용
-    calibrator = CalibratedClassifierCV(base_estimator=model, method='sigmoid', cv='prefit')
+    calibrator = CalibratedClassifierCV(estimator=model, method='sigmoid', cv='prefit')
     calibrator.fit(X_valid, y_valid)
 
     # 테스트 데이터에 대해 캘리브레이션 적용
